@@ -54,7 +54,7 @@ These apply across all phases:
 
 ## Core Knowledge: MEDDPICC Framework
 
-Reference: #[[file:meddpicc-framework.md]]
+Reference: #[[file:../meddpicc-framework.md]]
 
 ---
 
