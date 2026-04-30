@@ -67,6 +67,7 @@
   .statement-row:hover { background: #fafafa; }
   .statement-row .text { color: #16191f; }
   .statement-row select { padding: 4px; font-size: 13px; border: 1px solid var(--border); border-radius: 3px; text-align: center; }
+  .statement-row select:disabled { background: #f2f3f3; color: #879596; }
   .statement-labels { display: grid; grid-template-columns: 1fr 70px 70px; gap: 8px; padding: 6px 16px; font-size: 11px; font-weight: 700; color: #545b64; border-top: 1px solid var(--border); background: #fafafa; }
 
   .score-summary { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
@@ -117,31 +118,41 @@
         </div>
         <div class="form-group">
           <label>Opportunity Location <span class="required">*</span></label>
-          <input type="text" id="oppLocation" placeholder="E.g. HK / China / Singapore">
+          <select id="oppLocation">
+            <option value="">-- Select --</option>
+            <option>Hong Kong</option>
+            <option>Taiwan</option>
+            <option>China</option>
+            <option>Singapore</option>
+            <option>Japan</option>
+            <option>Korea</option>
+            <option>India</option>
+            <option>Australia</option>
+            <option>Others</option>
+          </select>
         </div>
         <div class="form-group">
           <label>Opportunity Type <span class="required">*</span></label>
           <select id="oppType">
             <option value="">-- Select --</option>
-            <option>New Business</option>
-            <option>Expansion</option>
-            <option>Renewal</option>
+            <option>GenAI</option>
             <option>Migration</option>
+            <option>Migration and Modernization</option>
             <option>Modernization</option>
             <option>Others</option>
           </select>
         </div>
         <div class="form-group">
-          <label>If "Others", describe</label>
+          <label>For "Others", provide description</label>
           <input type="text" id="oppTypeOther" placeholder="Description">
         </div>
         <div class="form-group">
-          <label>Current Opp Stage <span class="required">*</span></label>
+          <label>Oppt Stage <span class="required">*</span></label>
           <select id="oppStage">
             <option value="">-- Select --</option>
             <option>Prospect</option>
             <option>Qualified</option>
-            <option>Technical Validation</option>
+            <option>Tech Validation</option>
             <option>Business Validation</option>
             <option>Committed</option>
             <option>Closed/Launched</option>
@@ -149,11 +160,10 @@
         </div>
       </div>
 
-      <h4 style="margin-top:20px; margin-bottom:4px; font-size:14px;">Exit Criteria Completion</h4>
-      <p style="font-size:12px; color:#545b64; margin-bottom:8px;">Enter completion % and current status for all stages up to and including your current stage.</p>
+      <h4 style="margin-top:20px; margin-bottom:4px; font-size:14px;">Information from the current and all previous stages needs to be entered</h4>
       <table class="exit-table">
         <thead>
-          <tr><th>Stage</th><th>Exit Criteria</th><th style="width:80px">Completion %</th><th>Current Status</th><th style="width:100px">Remarks</th></tr>
+          <tr><th>Opp Stage</th><th>Exit Criteria</th><th style="width:100px">Current completion %</th><th>Describe current status (what has been done, what is still missing)</th><th style="width:100px">Remarks</th></tr>
         </thead>
         <tbody id="exitCriteriaBody"></tbody>
       </table>
@@ -169,7 +179,7 @@
   <!-- SECTION 2: Scorecard -->
   <div class="section">
     <div class="section-header" onclick="toggleSection(this)">
-      <span>2. MEDDPICC Scorecard (English)</span>
+      <span>2. MEDDPICC Scorecard</span>
       <span class="toggle">▼</span>
     </div>
     <div class="section-body" id="scorecardBody"></div>
@@ -192,7 +202,7 @@
           <textarea id="bizObjective" placeholder="What is the customer trying to achieve?"></textarea>
         </div>
         <div class="form-group full">
-          <label>Potential Obstacles to Winning the Deal</label>
+          <label>Potential Obstacles to Winning the Deal or Customer Concerns</label>
           <textarea id="obstacles" placeholder="Known risks, customer concerns, blockers"></textarea>
         </div>
         <div class="form-group full">
@@ -200,7 +210,7 @@
           <textarea id="awsSolutions" placeholder="E.g. EC2, S3, RDS, Migration Hub"></textarea>
         </div>
         <div class="form-group full">
-          <label>AWS Competitor <span class="required">*</span></label>
+          <label>AWS Competitor <span class="required">* MUST fill in here</span></label>
           <input type="text" id="competitor" placeholder="E.g. GCP, Azure, Alibaba Cloud (leave empty if none)">
         </div>
       </div>
@@ -212,7 +222,7 @@
     Export as .xlsx
   </button>
 
-  <div class="footer">MEDDPICC Scorecard Form &mdash; For use with Opportunity Progression Skill</div>
+  <div class="footer">MEDDPICC Scorecard Form v3 &mdash; For use with Opportunity Progression Skill</div>
 </div>
 
 <script>
@@ -227,7 +237,7 @@ const EXIT_CRITERIA = [
     'Customer champion & decision-maker identified',
     'Delivery partner strategy (Partner and/or ProServe) identified'
   ]},
-  { stage: 'Technical Validation', criteria: [
+  { stage: 'Tech Validation', criteria: [
     'Customer and AWS share common understanding of solution architecture, implementation, and process',
     'Technical solution design finalized and agreed with customer'
   ]},
@@ -236,58 +246,56 @@ const EXIT_CRITERIA = [
     'Deal details, including economics and close plan, have been jointly reviewed and agreed to with customer'
   ]},
   { stage: 'Committed', criteria: [
-    'Customer solution has started to move to AWS OR customer usage has spiked by 10% of opportunity MRR value',
-    'Customer has signed an agreement (Private Pricing Agreement)'
+    'Customer solution has started to move to AWS OR customer usage has spiked by 10% of opportunity MRR value; Customer has signed an agreement (Private Pricing Agreement)',
+    'No commitment from customer to proceed or existing commitment can no longer be honored; Another cloud provider has been selected by the customer'
   ]},
   { stage: 'Closed/Launched', criteria: [
-    'Delivery governance implemented',
-    'Opportunity has been won'
+    'Delivery governance implemented; Opportunity has been won'
   ]}
 ];
 
 const ELEMENTS = [
   { code: 'I', name: 'Implicate the Pain', category: 'Business Driven', catClass: 'cat-business', max: 12, statements: [
-    'I have identified the customer\'s pain and the implications.',
-    'There are sufficient, quantifiable, negative consequences of the pain.',
-    'The customer agrees the pain compels them to act.'
+    { text: 'I have identified the customer\'s pain and the implications.', weight: 4 },
+    { text: 'There are sufficient, quantifiable, negative consequences of the pain.', weight: 4 },
+    { text: 'The customer agrees the pain compels them to act.', weight: 4 }
   ]},
   { code: 'M', name: 'Metrics', category: 'Business Driven', catClass: 'cat-business', max: 13, statements: [
-    'I know the urgency and quantified the business problem(s) into a metric.',
-    'Our key metric is directly aligned with the Economic Buyer\'s primary business objectives and strategic goals.',
-    'I verified the metric with my Champion(s).',
-    'I verified the metric with the Economic Buyer.'
+    { text: 'I know the urgency and quantified the business problem(s) into a metric.', weight: 3 },
+    { text: 'Our key metric is directly aligned with the Economic Buyer\'s primary business objectives and strategic goals.', weight: 1 },
+    { text: 'I verified the metric with my Champion(s).', weight: 4 },
+    { text: 'I verified the metric with the Economic Buyer.', weight: 5 }
   ]},
   { code: 'E', name: 'Economic Buyer', category: 'Business Driven', catClass: 'cat-business', max: 13, statements: [
-    'I have engaged with the Economic Buyer and discussed the initiative.',
-    'The Economic Buyer recognizes the business pain points, AWS solutions, and the value (metrics) that the solutions deliver.',
-    'The Economic Buyer has given me a verbal \'go\' on the deal.'
+    { text: 'I have engaged with the Economic Buyer and discussed the initiative.', weight: 4 },
+    { text: 'The Economic Buyer recognizes the business pain points, AWS solutions, and the value (metrics) that the solutions deliver.', weight: 4 },
+    { text: 'The Economic Buyer has given me a verbal \'go\' on the deal.', weight: 5 }
   ]},
   { code: 'CH', name: 'Champion', category: 'Core Resource', catClass: 'cat-core', max: 12, statements: [
-    'My Champion has power and influence.',
-    'The Champion is providing valuable intel.',
-    'I have evidence the Champion is selling internally.'
+    { text: 'My Champion has power and influence.', weight: 4 },
+    { text: 'The Champion is providing valuable intel.', weight: 4 },
+    { text: 'I have evidence the Champion is selling internally.', weight: 4 }
   ]},
   { code: 'CO', name: 'Competition', category: 'Process Driven', catClass: 'cat-process', max: 12, statements: [
-    'Aware that the customer is considering alternatives to AWS.',
-    'AWS has advantages that alternatives do not.',
-    'The customer\'s decision criteria favor AWS over the alternatives.'
+    { text: 'Aware that the customer is considering alternatives to AWS. (If "Yes", go to the "Competitive Info" section and fill in the details.)', weight: 4 },
+    { text: 'AWS has advantages that alternatives do not.', weight: 4 },
+    { text: 'The customer\'s decision criteria favor AWS over the alternatives.', weight: 4 }
   ]},
   { code: 'DC', name: 'Decision Criteria', category: 'Process Driven', catClass: 'cat-process', max: 13, statements: [
-    'The customer\'s buying decision criteria have been identified.',
-    'The Champion has confirmed the decision criteria.',
-    'The decision criteria are differentiated for AWS.',
-    'We have ruled out "do nothing" as an option for the customer.'
+    { text: 'The customer\'s buying decision criteria have been identified.', weight: 3 },
+    { text: 'The Champion has confirmed the decision criteria.', weight: 3 },
+    { text: 'The decision criteria are differentiated for AWS.', weight: 3 },
+    { text: 'The customer agrees the pain compels them to act.', weight: 4 }
   ]},
   { code: 'DP', name: 'Decision Process', category: 'Process Driven', catClass: 'cat-process', max: 13, statements: [
-    'I fully understand the customer\'s decision-making process.',
-    'I have validated the decision process with multiple stakeholders.',
-    'I know the timeline and key milestones.',
-    'I have influenced the decision process in AWS\'s favor.'
+    { text: 'The Champion has provided me with the steps to close the deal.', weight: 4 },
+    { text: 'Legal, Finance and Economic Buyer/seller are aligned.', weight: 4 },
+    { text: 'We are executing on a mutually aligned close plan.', weight: 5 }
   ]},
   { code: 'P', name: 'Paper Process', category: 'Process Driven', catClass: 'cat-process', max: 12, statements: [
-    'I understand all the steps in the customer\'s procurement process.',
-    'I know who has signatory authority.',
-    'I have a Champion for the Paper Process.'
+    { text: 'I understand the customer\'s paper process and requirements (RFP/RFI criteria if necessary) to form an agreement.', weight: 4 },
+    { text: 'I have a paper/procurement Champion.', weight: 4 },
+    { text: 'We are executing on a mutually aligned paper process.', weight: 4 }
   ]}
 ];
 
@@ -300,9 +308,9 @@ function buildExitCriteria() {
         ${i === 0 ? `<td class="stage-label" rowspan="${stage.criteria.length}">${stage.stage}</td>` : ''}
         <td>${c}</td>
         <td><select class="exit-pct" data-stage="${stage.stage}">
-          ${[0,10,20,30,40,50,60,70,80,90,100].map(v => `<option value="${v}">${v}%</option>`).join('')}
+          ${[0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1].map(v => `<option value="${v}">${Math.round(v*100)}%</option>`).join('')}
         </select></td>
-        <td><input type="text" class="exit-status" placeholder="Status..."></td>
+        <td><input type="text" class="exit-status" placeholder="Current status..."></td>
         <td><input type="text" class="exit-remarks" placeholder=""></td>
       `;
       tbody.appendChild(tr);
@@ -326,17 +334,19 @@ function buildScorecard() {
       <div class="statement-labels">
         <span>Evaluation Statement</span>
         <span style="text-align:center">Applies?</span>
-        <span style="text-align:center">Score (1-5)</span>
+        <span style="text-align:center">Score</span>
       </div>
       ${el.statements.map((s, si) => `
         <div class="statement-row">
-          <div class="text">${s}</div>
-          <select class="applies" data-el="${ei}" data-st="${si}">
+          <div class="text">${s.text}</div>
+          <select class="applies" data-el="${ei}" data-st="${si}" data-weight="${s.weight}" onchange="onAppliesChange(this)">
+            <option value="" selected>--</option>
             <option value="Yes">Yes</option>
             <option value="No">No</option>
           </select>
-          <select class="score-select" data-el="${ei}" data-st="${si}" onchange="updateScores()">
-            ${[1,2,3,4,5].map(v => `<option value="${v}">${v}</option>`).join('')}
+          <select class="score-select" data-el="${ei}" data-st="${si}" onchange="updateScores()" disabled>
+            <option value="0" selected>-</option>
+            ${Array.from({length: s.weight}, (_, i) => i + 1).map(v => `<option value="${v}">${v}</option>`).join('')}
           </select>
         </div>
       `).join('')}
@@ -370,6 +380,21 @@ function buildScoreBars() {
       </div>
     `;
   });
+}
+
+function onAppliesChange(appliesSel) {
+  const ei = appliesSel.dataset.el;
+  const si = appliesSel.dataset.st;
+  const weight = parseInt(appliesSel.dataset.weight);
+  const scoreSel = document.querySelector(`.score-select[data-el="${ei}"][data-st="${si}"]`);
+  if (appliesSel.value === 'No' || appliesSel.value === '') {
+    scoreSel.value = '0';
+    scoreSel.disabled = true;
+  } else {
+    scoreSel.disabled = false;
+    scoreSel.value = String(weight);
+  }
+  updateScores();
 }
 
 function updateScores() {
@@ -409,7 +434,7 @@ function exportXlsx() {
 
   // Sheet 1: Basic Info
   const basicData = [
-    ['Account Name', 'Opportunity Name', 'Opportunity Location', 'Opportunity Type', 'Others Description', 'Opp Stage', 'Score'],
+    ['Account Name', 'Opportunity Name', 'Opportunity Location', 'Opportunity Type', 'Others Description', 'Oppt Stage', 'Score'],
     [
       document.getElementById('accountName').value,
       document.getElementById('oppName').value,
@@ -420,7 +445,10 @@ function exportXlsx() {
       parseInt(document.getElementById('totalScore').textContent)
     ],
     [],
-    ['Stage', 'Exit Criteria', 'Completion %', 'Current Status', 'Remarks']
+    [],
+    [],
+    ['Information from the current and all previous stages needs to be entered'],
+    ['Opp Stage', 'Exit Criteria', 'Current completion %', 'Describe current status (what has been done, what is still missing)', 'Remarks']
   ];
 
   let ecIdx = 0;
@@ -431,7 +459,7 @@ function exportXlsx() {
     stage.criteria.forEach(c => {
       basicData.push([
         stage.stage, c,
-        parseInt(exitPcts[ecIdx].value),
+        parseFloat(exitPcts[ecIdx].value),
         exitStatuses[ecIdx].value,
         exitRemarks[ecIdx].value
       ]);
@@ -439,16 +467,16 @@ function exportXlsx() {
     });
   });
   const ws1 = XLSX.utils.aoa_to_sheet(basicData);
-  ws1['!cols'] = [{wch:20},{wch:50},{wch:15},{wch:30},{wch:15}];
+  ws1['!cols'] = [{wch:20},{wch:60},{wch:18},{wch:50},{wch:15}];
   XLSX.utils.book_append_sheet(wb, ws1, 'Opportunity Basic Information');
 
   // Sheet 2: Scorecard
-  const scData = [['Category', 'Element', 'Evaluation Statement', 'Applies', 'Score', '#OneTeam Role', 'Action Plan', 'Potential Issues', 'Target Date', 'Remarks']];
+  const scData = [['Category', 'Element', 'Evaluation Statement', 'Applies', 'Score', '#OneTeam Role', 'Action/Backup Plan', 'Potential Issues', 'Target Date', 'Remarks']];
   ELEMENTS.forEach((el, ei) => {
     el.statements.forEach((s, si) => {
       const applies = document.querySelector(`.applies[data-el="${ei}"][data-st="${si}"]`).value;
       const score = document.querySelector(`.score-select[data-el="${ei}"][data-st="${si}"]`).value;
-      const row = [el.category, `${el.code} — ${el.name}`, s, applies, parseInt(score)];
+      const row = [el.category, `${el.code} — ${el.name}`, s.text, applies, parseInt(score)];
       if (si === 0) {
         const role = document.querySelector(`.ap-role[data-el="${ei}"]`).value;
         const action = document.querySelector(`.ap-action[data-el="${ei}"]`).value;
@@ -461,22 +489,22 @@ function exportXlsx() {
     });
   });
   const ws2 = XLSX.utils.aoa_to_sheet(scData);
-  ws2['!cols'] = [{wch:16},{wch:22},{wch:55},{wch:8},{wch:6},{wch:16},{wch:30},{wch:25},{wch:12},{wch:20}];
+  ws2['!cols'] = [{wch:16},{wch:24},{wch:60},{wch:8},{wch:6},{wch:16},{wch:30},{wch:25},{wch:12},{wch:20}];
   XLSX.utils.book_append_sheet(wb, ws2, 'Scorecard English');
 
   // Sheet 3: Competitive Info
   const compData = [
-    ['Field', 'Value'],
-    ['Account Name', document.getElementById('accountName').value],
-    ['EB Job Title', document.getElementById('ebTitle').value],
-    ['Customer Business Objective', document.getElementById('bizObjective').value],
-    ['Potential Obstacles', document.getElementById('obstacles').value],
-    ['Current Opp Stage', document.getElementById('oppStage').value],
+    ['Opportunity Details'],
+    ['1. Account Name', document.getElementById('accountName').value],
+    ['2. Job Title and Department of the Economic Buyer', document.getElementById('ebTitle').value],
+    ['3. Customer Business Objective', document.getElementById('bizObjective').value],
+    ['4. Potential Obstacles to Winning the Deal or Customer Concerns', document.getElementById('obstacles').value],
+    ['5. Current Opportunity Stage', document.getElementById('oppStage').value],
     ['AWS Solutions and Services', document.getElementById('awsSolutions').value],
-    ['AWS Competitor', document.getElementById('competitor').value]
+    ['AWS Competitor MUST fill in here (E.g GCP, Ali, Azure)', document.getElementById('competitor').value]
   ];
   const ws3 = XLSX.utils.aoa_to_sheet(compData);
-  ws3['!cols'] = [{wch:30},{wch:60}];
+  ws3['!cols'] = [{wch:55},{wch:60}];
   XLSX.utils.book_append_sheet(wb, ws3, 'Competitive Info');
 
   const fileName = `MEDDPICC_Scorecard_${document.getElementById('accountName').value || 'unnamed'}_${new Date().toISOString().slice(0,10)}.xlsx`;
