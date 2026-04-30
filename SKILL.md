@@ -32,8 +32,8 @@ These apply across all phases:
 **Phase Gating:** Pause after each phase. Confirm with the user before proceeding to the next.
 
 **Input Mode:**
-- User must provide a MEDDPICC Scorecard (.xlsx) to proceed with analysis.
-- If user has no Scorecard: direct them to the Scorecard Form to fill in and export, then upload.
+- **Mode A — Scorecard Upload:** User provides a MEDDPICC Scorecard (.xlsx). If user has no Scorecard: direct them to the Scorecard Form to fill in and export, then upload.
+- **Mode B — Customer Conversation Builder:** Import opportunity data from the `customer-conversation-builder` skill output. This is a preceding skill in the agent pipeline; interface TBD (see reserved-interfaces.md).
 
 **Language:** Auto-detect from active Scorecard sheet. MEDDPICC terminology stays in English. Question phrasing adapts to Opportunity Location culture.
 
@@ -73,9 +73,15 @@ Reference: #[[file:aws-sales-stages.md]]
 **Steps:**
 
 1. **Determine Input Mode**
-   - Ask: "Do you have a MEDDPICC Scorecard ready to upload?"
-   - **Mode A (Yes):** User uploads .xlsx → proceed to Step 2.
-   - **Mode B (No):** Provide the Scorecard Form link and instruct: "No problem — use this form to fill in your opportunity details. It takes about 10 minutes. Once done, click Export and upload the .xlsx file here." → WAIT for upload, then proceed to Step 2 as Mode A.
+   - Ask: "How would you like to provide your opportunity data? (A) Upload a MEDDPICC Scorecard, or (B) Import from Customer Conversation Builder?"
+   - **Mode A — Scorecard Upload:**
+     - User uploads .xlsx → proceed to Step 2.
+     - If user has no Scorecard: provide the Scorecard Form link and instruct: "No problem — use this form to fill in your opportunity details. It takes about 10 minutes. Once done, click Export and upload the .xlsx file here." → WAIT for upload, then proceed to Step 2 as Mode A.
+   - **Mode B — Customer Conversation Builder:**
+     - Import opportunity data from the `customer-conversation-builder` skill output (via reserved interface)
+     - Map imported fields to MEDDPICC Scorecard structure: basic info, element scores, competitive info
+     - If import data is incomplete: show what's missing and ask user to supplement via Scorecard Form or manual input
+     - Once mapped → proceed to Step 2 with the same validation flow
 
 2. **Validate & Select Data Source**
    - Check for required sections: opportunity basic info sheet + at least one scoring sheet
