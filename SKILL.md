@@ -815,9 +815,18 @@ _Expanded from Phase 2's "30-Day Improvement Targets" — same elements and thre
 
 ## Phase 7: Reading Report Generation
 
-**Purpose:** Package all Phase 2–6 analysis into a single, shareable HTML reading interface — a one-file deliverable suitable for forwarding to account team leadership, printing to PDF for GM review, or embedding into opportunity review decks. The report is a read-only view of analysis already produced; Phase 7 performs NO new analysis and introduces NO new judgments.
+**Purpose:** Package all Phase 2–6 analysis into a shareable report rendered through a **Jinja2 template + structured data** pipeline, aligned with the Sales Agent team-wide documentation output standard (Material Design 3, Google Sans / Roboto, purple-primary palette). The report is a read-only view of analysis already produced — Phase 7 performs NO new analysis and introduces NO new judgments.
 
-**Output:** One standalone `.html` file saved to the current working directory (or a user-specified path), plus a one-line confirmation with the file path and a summary of sections rendered.
+**Output standard (team-wide):**
+
+| Format | Use case | Trigger |
+|---|---|---|
+| **HTML** | Default output, rich visual view | Always produced by Phase 7 |
+| **PDF** | Print / email forwarding | On explicit user request ("导出 PDF" / "export to PDF") |
+| **Word (.docx)** | Offline editing | On explicit user request ("导出 Word" / "export to docx") |
+
+Visual system is fixed across all Sales Agent skills:
+- MD3 palette (primary `#6750A4`), Google Sans + Roboto, Tailwind via CDN, Material Symbols icons, max-width `6xl`, cards `28px` radius, pill badges `100px` radius, stepper with circle nodes. No deviation.
 
 **Trigger:** Two paths into Phase 7:
 
@@ -826,78 +835,70 @@ _Expanded from Phase 2's "30-Day Improvement Targets" — same elements and thre
   - Chinese: `生成报告` / `导出报告` / `生成阅读界面` / `出一份报告` / `打包成 HTML` / `给我一份 HTML` / `做成可分享的报告`
   - English: `report` / `export report` / `generate report` / `export HTML` / `reading view` / `shareable report`
 
-  Immediately jump to Phase 7 using whatever Phase 2–6 outputs are already in context. Render completed-phase cards only; for any uncompleted phase, skip its `<section>` entirely. The confirmation line in Step 6 MUST list the omitted sections explicitly so the user knows what the report contains and what it does not.
+  Immediately jump to Phase 7 using whatever Phase 2–6 outputs are already in context. Populate only the data keys for completed phases; uncompleted phases are omitted from the data dict and the template skips their sections. The confirmation line in Step 5 MUST list the omitted sections.
 
-If Phase 1 classified as Commodity, Phase 7 does NOT run — the tool has already exited with the Upgrade-Signal Checklist and there is no analysis to package.
+If Phase 1 classified as Commodity, Phase 7 does NOT run — the tool has already exited and there is no analysis to package.
 
-**Template source:** #[[file:report-template.html]] — the authoritative layout, CSS variables, and section structure. Do NOT rewrite CSS from scratch; use the template verbatim and only substitute the data.
+**Pipeline (template-based, not string substitution):**
 
-**Design principles (MUST preserve from template):**
-- **Material Design 3 visual system** — color tokens, typography, card radii (28px primary / 20px nested), elevation, spacing. Do not substitute custom CSS.
-- **Section-card pattern** — each phase is a top-level `<section>` with the prescribed icon + title bar. Preserve the icon mapping:
-  - Phase 2 Deal Assessment → `dashboard`
-  - Phase 2.5 Stage Alignment → `timeline`
-  - Phase 3 Exit Criteria → `fact_check`
-  - Phase 4 Market & Competitive → `insights`
-  - Phase 5 Element Gap / Stakeholder / Questions → `analytics` / `groups` / `forum`
-  - Phase 6 Action Plan → `flag`
-- **No new visual flourishes** — the template is intentionally minimal. Do not add charts, icons, or sections not present in the template without explicit user request.
-- **Language follows the auto-detected Phase 1B output language.** All narrative content in the report uses that language; MEDDPICC element codes stay in English (M / E / DC / DP / P / I / CH / CP).
+```
+Phase 2–6 in-context outputs
+          │
+          ▼
+  Agent assembles structured data (dict / JSON)  ← Step 1
+          │
+          ▼
+  Jinja2 Environment loads templates/opportunity-progression.html.j2
+          │
+          ▼
+  template.render(**data) → rendered HTML string  ← Step 2
+          │
+          ▼
+  Write to [save-path]/progression-report-[slug]-[YYYYMMDD].html  ← Step 3
+```
+
+**Template:** `templates/opportunity-progression.html.j2` (Jinja2, in this skill repo). Data contract reference: `examples/sample-data.json`; rendered preview: `examples/sample-report.html`.
 
 **Steps:**
 
-1. **Load template & substitute data** — Read `report-template.html`. Replace the NIO sample data with the current opportunity's Phase 2–6 outputs. Substitution map:
+1. **Assemble the data dict** — Walk the template data contract in `examples/sample-data.json` and populate each block from in-context Phase outputs. Top-level keys and their sources:
 
-   | Template Region | Source (from in-memory Phase outputs) |
-   |---|---|
-   | Header (title, subtitle, TCV badge) | Phase 1B basic info + Phase 2 total score display |
-   | Rollback banner | Phase 2.5 `rollback_recommended` flag + reasons; **omit entire banner if false** |
-   | Phase 2 Deal Assessment card (5 sections) | Phase 2 output verbatim |
-   | Phase 2.5 stepper + result detail | Phase 2.5 `alignment_result` + Pass 1 / Pass 2 rationale |
-   | Phase 3 stage aggregation + exit-criteria table + risk buckets | Phase 3 Step 2 table + Step 3 aggregation + Step 5 risk output |
-   | Phase 4 three fixed sections + competitive cards | Phase 4 Step 1 (Sections 1–3) + Step 2 competitive block |
-   | Phase 5 Layer A element grid + Layer B diagnostic cards + chain diagram | Phase 5 Steps 1–2 verbatim |
-   | Stakeholder profiling + CxO overlay | Phase 5 Step 3 |
-   | Verification questions + "Persona Traits Applied" block | Phase 5 Step 4 |
-   | Phase 6 strategies (W-rows) + metrics | Phase 6 strategies + weekly plans + Key Success Metrics |
+   | Data key | Source | When to populate |
+   |---|---|---|
+   | `meta` | Phase 1B basic info | Always |
+   | `rollback_banner` | Phase 2.5 `rollback_recommended` flag + reasons | Include with `show: true` only when rollback was recommended; otherwise omit the key entirely |
+   | `phase2` | Phase 2 Deal Assessment output | If Phase 2 ran |
+   | `phase25` | Phase 2.5 `alignment_result` + stepper + Pass 1/2 rationale | If Phase 2.5 ran |
+   | `phase3` | Phase 3 Step 2 rows + Step 3 aggregation + Step 5 risk buckets | If Phase 3 ran |
+   | `phase4` | Phase 4 Step 1 (3 fixed sections) + Step 2 competitors. Set `show: false` if Phase 4 was skipped (Simple tier, no named competitors) | If Phase 4 ran |
+   | `phase5` | Phase 5 Layer A elements + Layer B cards + chain diagram + stakeholders + CxO overlay + questions (with Persona Traits) | If Phase 5 ran |
+   | `phase6` | Phase 6 context + strategies + metrics | If Phase 6 ran |
 
-2. **Conditional sections** — A phase's card renders ONLY if that phase completed in this run:
-   - If Phase 2.5 rolled back → rollback banner shows, with Pass 1 / Pass 2 specific reasons.
-   - If Phase 2.5 did not roll back → omit banner entirely; in the Phase 2.5 card, show the actual `alignment_result` (Aligned / Strengthening / Advancement Ready) and render the stepper with the current stage highlighted and no rollback-target node.
-   - If a Phase 5 P0/P1 element does not exist → omit its diagnostic card. If no P0/P1 elements exist, omit Layer B entirely and show "All in-scope elements at P2 — no active diagnostic cards." in Layer B's slot.
-   - If Phase 4 was skipped (Simple tier with no named competitors) → render only the Market Search block; replace competitive cards with "Competitive monitoring not triggered at Simple tier (no named competitors in Scorecard)."
+   **Color tokens** for status / priority / risk fields — use M3 semantic names only (the template maps names to `--md-sys-color-*` variables):
+   - Status / priority color names: `success`, `warning`, `error`, `primary`
+   - Stakeholder tag `tag_bg` / `tag_fg` pairs: `success-container` / `on-success-container` (Champion, Supporter), `warning-container` / `on-warning-container` (Neutral), `error-container` / `on-error-container` (Skeptic, At Risk), `secondary-container` / `on-primary-container` (Economic Buyer), `surface-container-highest` / `on-surface-variant` (Coach)
+   - Never introduce a hard-coded hex — if a new category is needed, extend `:root` in the template and reference it by variable name.
 
-3. **Element card color coding** — Apply Priority class from Phase 5 Layer A:
-   - P0 → `element-card p0` (red left border)
-   - P1 → `element-card p1` (orange left border)
-   - P2 → `element-card p2` (green left border)
-   - Score bar fill color: `<60%` → `--md-sys-color-error`; `60–79%` → `--md-sys-color-warning`; `≥80%` → `--md-sys-color-success`.
+2. **Render via Jinja2** — Load `templates/opportunity-progression.html.j2` with autoescape on, `trim_blocks=True`, `lstrip_blocks=True`. Call `template.render(**data)`. Reference implementation: `examples/render_sample.py`.
 
-4. **Status pill colors** — Preserve template mapping (all colors reference M3 container tokens — no hard-coded hex):
-   - ✅ On Track / Champion / Supporter / Done → `background: var(--md-sys-color-success-container); color: var(--md-sys-color-on-success-container);`
-   - ⚠️ Needs Improvement / Neutral → `background: var(--md-sys-color-warning-container); color: var(--md-sys-color-on-warning-container);`
-   - 🔴 At Risk / Skeptic / High Risk → `background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container);`
-   - Economic Buyer pill → `background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-primary-container);`
-   - Coach / Neutral role → `background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant);`
-   - Solid severity chip (Primary Blocker / Foundation / Progression / MEDDPICC Risk headers) → `background: var(--md-sys-color-error); color: var(--md-sys-color-on-primary);`
-   - Solid warning chip (Medium risk) → `background: var(--md-sys-color-warning); color: var(--md-sys-color-on-primary);`
-
-   Do NOT introduce new hard-coded hex values — if a new status type is needed, first add a new `--md-sys-color-*` variable to `:root`, then reference it.
-
-5. **File output** —
+3. **Write the HTML file** —
    - **Naming:** `progression-report-[opportunity-name-slug]-[YYYYMMDD].html`
-     - `opportunity-name-slug` comes from the **Opportunity Name** field in the Scorecard Basic Info (parsed in Phase 1B). Transform rules: lowercase, spaces → hyphens, Chinese characters preserved, strip path-unsafe characters (`/ \ : * ? " < > |`), truncate to 60 characters if longer.
-     - Why Opportunity Name (not Customer Name): Opportunity Name usually already carries the customer + opportunity scope (e.g., "NIO — NOMI Multimodal Cockpit AI Upgrade"), so this avoids clashes when one customer has multiple concurrent opportunities.
-     - Example: `progression-report-nio-—-nomi-multimodal-cockpit-ai-upgrade-20260513.html`
-     - If Opportunity Name is missing/empty in the Scorecard, fall back to `progression-report-[customer-slug]-[YYYYMMDD].html` and note the fallback in the confirmation line.
-   - **Collision handling:** if a file with the same name exists, append `-v2`, `-v3`, etc.
-   - **Save location:** do NOT assume a default path. Before writing the file, ASK the user:
+     - `opportunity-name-slug` is from the Scorecard Basic Info **Opportunity Name** field. Transform: lowercase, spaces → hyphens, Chinese characters preserved, strip path-unsafe characters (`/ \ : * ? " < > |`), truncate to 60 characters.
+     - If Opportunity Name is missing, fall back to `progression-report-[customer-slug]-[YYYYMMDD].html` and note the fallback in the confirmation line.
+   - **Collision handling:** append `-v2`, `-v3`, etc. if the file already exists.
+   - **Save location:** before writing, ASK the user:
      > "报告要存到哪里？直接回车使用当前目录，或指定一个路径（例如 `~/Desktop`、`~/Documents/OP-Reports/`）。
      > Where should the report be saved? Press Enter for current directory, or specify a path (e.g., `~/Desktop`, `~/Documents/OP-Reports/`)."
 
-     Accept the user's reply verbatim: empty/Enter → current working directory; otherwise expand `~` and use the provided path. Create the directory if it does not exist. Do NOT save before receiving the reply.
+     Empty/Enter → current working directory; otherwise expand `~` and use the provided path. Create the directory if it does not exist. Do NOT write before receiving the reply.
 
-6. **Confirm delivery** — Output exactly this format (substitute bracketed fields):
+4. **Optional exports** — After HTML is written, Phase 7 rests. If the user then says:
+   - `导出 PDF` / `export to PDF` / `打印版` → invoke `examples/export_pdf.py` with the rendered HTML. Uses headless Chromium via Playwright (preferred) or system Chrome fallback — **not** WeasyPrint, because the template depends on Tailwind CDN's JIT engine which requires a real browser to compile class names. Saves next to the HTML with `.pdf` extension.
+   - `导出 Word` / `export to docx` / `Word 版` → invoke `examples/export_docx.py` with the same JSON data dict that fed the HTML render. Uses `python-docx` to build a clean business-register document directly from the data contract (no HTML parsing), per the team-wide rule "Word does not attempt pixel-for-pixel fidelity with HTML". Saves with `.docx` extension.
+
+   These are on-demand only. Never produce PDF / Word automatically alongside HTML.
+
+5. **Confirm delivery** — Output this format (substitute bracketed fields):
 
 ```
 ✅ Reading report generated: [absolute file path]
@@ -907,20 +908,21 @@ Sections rendered:
 - Phase 2 Deal Assessment
 - Phase 2.5 Stage Alignment ([result])
 - Phase 3 Exit Criteria ([N] rows, [M] stages)
-- Phase 4 Market & Competitive ([full / Simple-tier lite])
+- Phase 4 Market & Competitive ([full / Simple-tier lite / omitted])
 - Phase 5 Element Gap ([P0 count] P0 + [P1 count] P1 cards)
 - Phase 5 Stakeholder Profiling ([N] stakeholders)
 - Phase 5 Verification Questions ([N] questions across [M] elements)
 - Phase 6 Action Plan ([N] strategies, [W-count] weekly actions)
 
-Open the file in a browser to view, or print to PDF for sharing. The skill session ends here.
+Open the file in a browser to view. For PDF or Word copies, reply "导出 PDF" or "导出 Word".
 ```
 
 **Constraints:**
-- Phase 7 performs **no new analysis** — every piece of data in the report must trace to a prior Phase 2–6 output. If a field is missing from prior phases, mark it as "Not available" in the report rather than inventing content.
-- Do NOT embed external CDN dependencies beyond what the template already uses (Tailwind CDN, Google Fonts, Material Symbols). The template is self-contained with 3 `<link>` + 1 `<script>` tags — preserve that exact set.
-- Do NOT include the user's uploaded Scorecard file path, agent trace, or raw JSON in the HTML — the report is customer-safe internal sharing material.
-- The skill session ENDS after Phase 7 confirmation. Do not loop back to prior phases unless the user explicitly asks.
+- Phase 7 performs **no new analysis** — every data field must trace to a prior Phase 2–6 output. If a field is missing from prior phases, mark it as "Not available" in the data dict rather than inventing content.
+- Do NOT add or remove sections in the template. If a new section is required, first update `templates/opportunity-progression.html.j2` and `examples/sample-data.json` in the same change, re-run `examples/render_sample.py` to verify, and record the schema change in `examples/README.md`.
+- Do NOT modify the MD3 palette or typography — consistency across Sales Agent skills is a hard requirement from the team-wide standard.
+- Do NOT include the user's uploaded Scorecard file path, agent trace, or raw JSON in the rendered HTML — reports are customer-safe internal sharing material.
+- The skill session ENDS after Phase 7 confirmation (unless the user then requests PDF / Word export or iterations).
 
 ---
 

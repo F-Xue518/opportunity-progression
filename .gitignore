@@ -9,3 +9,10 @@
 
 # Excel temp lock files
 ~$*.xlsx
+# Phase 7 export build artifacts (regenerate via export_pdf.py / export_docx.py)
+examples/*.pdf
+examples/*.docx
+
+# Python
+__pycache__/
+*.pyc
