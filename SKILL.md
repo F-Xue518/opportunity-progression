@@ -809,6 +809,119 @@ _Expanded from Phase 2's "30-Day Improvement Targets" — same elements and thre
 - No 🔴🟠🟡 priority tags — weekly numbering (W1/W2/...) carries time urgency semantically
 - Do NOT re-deliver Phase 5 diagnostic depth — this phase is action, not analysis
 
+**Phase Gating:** After presenting the Action Plan, pause and output: "Action Plan complete. The next step is Reading Report Generation, which packages all Phase 2–6 analysis into a single shareable HTML reading interface using the Material Design 3 report template. Confirm to proceed."
+
+---
+
+## Phase 7: Reading Report Generation
+
+**Purpose:** Package all Phase 2–6 analysis into a single, shareable HTML reading interface — a one-file deliverable suitable for forwarding to account team leadership, printing to PDF for GM review, or embedding into opportunity review decks. The report is a read-only view of analysis already produced; Phase 7 performs NO new analysis and introduces NO new judgments.
+
+**Output:** One standalone `.html` file saved to the current working directory (or a user-specified path), plus a one-line confirmation with the file path and a summary of sections rendered.
+
+**Trigger:** Two paths into Phase 7:
+
+- **Path A — natural handoff after Phase 6:** Phase 6 Action Plan confirmed by user. Agent then prompts for Phase 7 per the Phase 6 gating line.
+- **Path B — shortcut invocation (any time after Phase 2):** If the user says any of these (exact match not required — recognize the intent):
+  - Chinese: `生成报告` / `导出报告` / `生成阅读界面` / `出一份报告` / `打包成 HTML` / `给我一份 HTML` / `做成可分享的报告`
+  - English: `report` / `export report` / `generate report` / `export HTML` / `reading view` / `shareable report`
+
+  Immediately jump to Phase 7 using whatever Phase 2–6 outputs are already in context. Render completed-phase cards only; for any uncompleted phase, skip its `<section>` entirely. The confirmation line in Step 6 MUST list the omitted sections explicitly so the user knows what the report contains and what it does not.
+
+If Phase 1 classified as Commodity, Phase 7 does NOT run — the tool has already exited with the Upgrade-Signal Checklist and there is no analysis to package.
+
+**Template source:** #[[file:report-template.html]] — the authoritative layout, CSS variables, and section structure. Do NOT rewrite CSS from scratch; use the template verbatim and only substitute the data.
+
+**Design principles (MUST preserve from template):**
+- **Material Design 3 visual system** — color tokens, typography, card radii (28px primary / 20px nested), elevation, spacing. Do not substitute custom CSS.
+- **Section-card pattern** — each phase is a top-level `<section>` with the prescribed icon + title bar. Preserve the icon mapping:
+  - Phase 2 Deal Assessment → `dashboard`
+  - Phase 2.5 Stage Alignment → `timeline`
+  - Phase 3 Exit Criteria → `fact_check`
+  - Phase 4 Market & Competitive → `insights`
+  - Phase 5 Element Gap / Stakeholder / Questions → `analytics` / `groups` / `forum`
+  - Phase 6 Action Plan → `flag`
+- **No new visual flourishes** — the template is intentionally minimal. Do not add charts, icons, or sections not present in the template without explicit user request.
+- **Language follows the auto-detected Phase 1B output language.** All narrative content in the report uses that language; MEDDPICC element codes stay in English (M / E / DC / DP / P / I / CH / CP).
+
+**Steps:**
+
+1. **Load template & substitute data** — Read `report-template.html`. Replace the NIO sample data with the current opportunity's Phase 2–6 outputs. Substitution map:
+
+   | Template Region | Source (from in-memory Phase outputs) |
+   |---|---|
+   | Header (title, subtitle, TCV badge) | Phase 1B basic info + Phase 2 total score display |
+   | Rollback banner | Phase 2.5 `rollback_recommended` flag + reasons; **omit entire banner if false** |
+   | Phase 2 Deal Assessment card (5 sections) | Phase 2 output verbatim |
+   | Phase 2.5 stepper + result detail | Phase 2.5 `alignment_result` + Pass 1 / Pass 2 rationale |
+   | Phase 3 stage aggregation + exit-criteria table + risk buckets | Phase 3 Step 2 table + Step 3 aggregation + Step 5 risk output |
+   | Phase 4 three fixed sections + competitive cards | Phase 4 Step 1 (Sections 1–3) + Step 2 competitive block |
+   | Phase 5 Layer A element grid + Layer B diagnostic cards + chain diagram | Phase 5 Steps 1–2 verbatim |
+   | Stakeholder profiling + CxO overlay | Phase 5 Step 3 |
+   | Verification questions + "Persona Traits Applied" block | Phase 5 Step 4 |
+   | Phase 6 strategies (W-rows) + metrics | Phase 6 strategies + weekly plans + Key Success Metrics |
+
+2. **Conditional sections** — A phase's card renders ONLY if that phase completed in this run:
+   - If Phase 2.5 rolled back → rollback banner shows, with Pass 1 / Pass 2 specific reasons.
+   - If Phase 2.5 did not roll back → omit banner entirely; in the Phase 2.5 card, show the actual `alignment_result` (Aligned / Strengthening / Advancement Ready) and render the stepper with the current stage highlighted and no rollback-target node.
+   - If a Phase 5 P0/P1 element does not exist → omit its diagnostic card. If no P0/P1 elements exist, omit Layer B entirely and show "All in-scope elements at P2 — no active diagnostic cards." in Layer B's slot.
+   - If Phase 4 was skipped (Simple tier with no named competitors) → render only the Market Search block; replace competitive cards with "Competitive monitoring not triggered at Simple tier (no named competitors in Scorecard)."
+
+3. **Element card color coding** — Apply Priority class from Phase 5 Layer A:
+   - P0 → `element-card p0` (red left border)
+   - P1 → `element-card p1` (orange left border)
+   - P2 → `element-card p2` (green left border)
+   - Score bar fill color: `<60%` → `--md-sys-color-error`; `60–79%` → `--md-sys-color-warning`; `≥80%` → `--md-sys-color-success`.
+
+4. **Status pill colors** — Preserve template mapping (all colors reference M3 container tokens — no hard-coded hex):
+   - ✅ On Track / Champion / Supporter / Done → `background: var(--md-sys-color-success-container); color: var(--md-sys-color-on-success-container);`
+   - ⚠️ Needs Improvement / Neutral → `background: var(--md-sys-color-warning-container); color: var(--md-sys-color-on-warning-container);`
+   - 🔴 At Risk / Skeptic / High Risk → `background: var(--md-sys-color-error-container); color: var(--md-sys-color-on-error-container);`
+   - Economic Buyer pill → `background: var(--md-sys-color-secondary-container); color: var(--md-sys-color-on-primary-container);`
+   - Coach / Neutral role → `background: var(--md-sys-color-surface-container-highest); color: var(--md-sys-color-on-surface-variant);`
+   - Solid severity chip (Primary Blocker / Foundation / Progression / MEDDPICC Risk headers) → `background: var(--md-sys-color-error); color: var(--md-sys-color-on-primary);`
+   - Solid warning chip (Medium risk) → `background: var(--md-sys-color-warning); color: var(--md-sys-color-on-primary);`
+
+   Do NOT introduce new hard-coded hex values — if a new status type is needed, first add a new `--md-sys-color-*` variable to `:root`, then reference it.
+
+5. **File output** —
+   - **Naming:** `progression-report-[opportunity-name-slug]-[YYYYMMDD].html`
+     - `opportunity-name-slug` comes from the **Opportunity Name** field in the Scorecard Basic Info (parsed in Phase 1B). Transform rules: lowercase, spaces → hyphens, Chinese characters preserved, strip path-unsafe characters (`/ \ : * ? " < > |`), truncate to 60 characters if longer.
+     - Why Opportunity Name (not Customer Name): Opportunity Name usually already carries the customer + opportunity scope (e.g., "NIO — NOMI Multimodal Cockpit AI Upgrade"), so this avoids clashes when one customer has multiple concurrent opportunities.
+     - Example: `progression-report-nio-—-nomi-multimodal-cockpit-ai-upgrade-20260513.html`
+     - If Opportunity Name is missing/empty in the Scorecard, fall back to `progression-report-[customer-slug]-[YYYYMMDD].html` and note the fallback in the confirmation line.
+   - **Collision handling:** if a file with the same name exists, append `-v2`, `-v3`, etc.
+   - **Save location:** do NOT assume a default path. Before writing the file, ASK the user:
+     > "报告要存到哪里？直接回车使用当前目录，或指定一个路径（例如 `~/Desktop`、`~/Documents/OP-Reports/`）。
+     > Where should the report be saved? Press Enter for current directory, or specify a path (e.g., `~/Desktop`, `~/Documents/OP-Reports/`)."
+
+     Accept the user's reply verbatim: empty/Enter → current working directory; otherwise expand `~` and use the provided path. Create the directory if it does not exist. Do NOT save before receiving the reply.
+
+6. **Confirm delivery** — Output exactly this format (substitute bracketed fields):
+
+```
+✅ Reading report generated: [absolute file path]
+
+Sections rendered:
+- Header + Rollback Banner ([shown / omitted])
+- Phase 2 Deal Assessment
+- Phase 2.5 Stage Alignment ([result])
+- Phase 3 Exit Criteria ([N] rows, [M] stages)
+- Phase 4 Market & Competitive ([full / Simple-tier lite])
+- Phase 5 Element Gap ([P0 count] P0 + [P1 count] P1 cards)
+- Phase 5 Stakeholder Profiling ([N] stakeholders)
+- Phase 5 Verification Questions ([N] questions across [M] elements)
+- Phase 6 Action Plan ([N] strategies, [W-count] weekly actions)
+
+Open the file in a browser to view, or print to PDF for sharing. The skill session ends here.
+```
+
+**Constraints:**
+- Phase 7 performs **no new analysis** — every piece of data in the report must trace to a prior Phase 2–6 output. If a field is missing from prior phases, mark it as "Not available" in the report rather than inventing content.
+- Do NOT embed external CDN dependencies beyond what the template already uses (Tailwind CDN, Google Fonts, Material Symbols). The template is self-contained with 3 `<link>` + 1 `<script>` tags — preserve that exact set.
+- Do NOT include the user's uploaded Scorecard file path, agent trace, or raw JSON in the HTML — the report is customer-safe internal sharing material.
+- The skill session ENDS after Phase 7 confirmation. Do not loop back to prior phases unless the user explicitly asks.
+
 ---
 
 ## Reserved Interfaces

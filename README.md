@@ -12,6 +12,7 @@ MEDDPICC / EDDIC gap analysis, stage alignment assessment, and deal progression 
 | `reserved-interfaces.md` | Planned external data-source integrations |
 | `scorecard-form.html` | MEDDPICC Scorecard input form (8 elements); exports to .xlsx |
 | `eddic-scorecard-form.html` | EDDIC Scorecard input form (5 elements); exports to .xlsx |
+| `report-template.html` | Phase 7 reading-interface template (Material Design 3); filled with sample data, substituted at runtime |
 | `EDDIC Scorecard V1.xlsx` | EDDIC Scorecard template |
 | `MEDDPICC Scorecard V3 E.xlsx` | MEDDPICC Scorecard template |
 | `MEDDPICC 和 Sales Stage 1.xlsx` | Source mapping between MEDDPICC elements and AWS sales stages |
@@ -35,6 +36,7 @@ Phase 3       Sales Stage Assessment      (exit criteria, risk)
 Phase 4       Market & Competitive Intel  (delegated to other skills)
 Phase 5       Element Gap Analysis        (diagnostics, stakeholder profiling, questions)
 Phase 6       Action Plan                 (strategies + weekly plan)
+Phase 7       Reading Report Generation   (one-file HTML deliverable · Material Design 3)
 ```
 
 ## Related Skills (delegated)
