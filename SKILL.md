@@ -677,12 +677,54 @@ Phase 3–6 analysis will continue at **[reported stage]** regardless of the res
      - **b. CxO Persona** (secondary, conditional) — CxO-specific overlay (e.g., CFO decision levers, CTO technical priorities). Included ONLY when EB title is C-level AND `cxo-personas.md` is available. Skip this subsection for non-C-level EBs.
 
    - **Do NOT output a "What This Means for Your Next Move" section.** That content duplicates Step 4 (verification questions already embed the tactical implications) and Phase 6 (Winning Strategies already carry the action). Tactical implications of the profile appear as **"Persona traits applied"** blocks inside Step 4, not here.
-   - **Data source for the EB identity:** Pulled from Scorecard's Competitive Info sheet (EB Job Title field if present) or from the user's prior-turn inputs. This skill does NOT infer an EB from scratch — if neither source has the EB, output: "⚠️ EB not identified in Scorecard. Please provide EB title/role before Step 4 so questions can be persona-tuned." WAIT for user input before proceeding to Step 4.
+   - **Data source for the EB identity:**
+
+     EB identity may only come from one of these two sources:
+
+     1. The **EB Job Title** field in the Scorecard's Competitive Info sheet.
+     2. **Explicit user input in the current conversation.**
+
+     No other Scorecard fields — including Remarks, Opportunity Description, Potential Obstacles, or any free-text notes — may be used to infer the EB identity. This skill does NOT infer an EB from training data, customer industry conventions, or org-chart guesses.
+
+     **If neither source provides an EB title**, output verbatim:
+
+     > "⚠️ EB not identified. Verification questions in this phase will be less targeted without a decision-maker persona.
+     >
+     > - Reply with the EB's title or role (e.g., `CFO`, `VP Engineering`, `采购总监`) to enable persona-tuned questions.
+     > - Reply `skip` to proceed without an EB — questions will be generated from element gaps only, with no persona adjustment."
+
+     Then WAIT.
+
+     **Handle the user's reply:**
+
+     - **A job title is provided** → set `eb_identity` to that title and proceed to Step 4 with full persona profiling (Contact Profiling skill + optional CxO Persona overlay).
+     - **`skip` / `跳过` / `pass` / `暂无 EB` / `no EB yet` / `no economic buyer`** (case-insensitive) → set `no_persona_mode = true` and proceed to Step 4 in degraded mode (defined below).
+     - **Anything else** (a fragment, a question, an off-topic reply) → re-prompt once:
+
+       > "I didn't get a job title. Reply with the EB's role (e.g., `CFO`, `采购总监`), or `skip` to proceed without."
+
+       On the second WAIT, if the reply is still neither a title nor skip, set `no_persona_mode = true` and proceed.
+
+     Do NOT proceed silently to Step 4 without one of these resolutions.
+
+     **Tier compatibility:** This rule applies equally to Strategic (MEDDPICC) and Simple (EDDIC). In EDDIC, if Phase 2 already flagged Foundation Incomplete due to E = 0%, the skip path is still available — Step 4 will note both the Foundation gap and the no-persona mode in its prepended warning.
+
+     **Degraded mode (when `no_persona_mode = true`):** Step 4 question generation will (1) prepend the line `⚠️ No EB identified — questions are not persona-tuned.` to its output, (2) omit the "Persona traits applied" block entirely, and (3) generate questions from MEDDPICC / EDDIC element gaps alone, without persona-shaped phrasing or vocabulary.
+
+     **Downstream impact:** WAIT in this step blocks ONLY Step 4. Phase 6 may still proceed using the full Phase 2–5 analysis — Action Plan does not require EB identity to construct strategies and weekly plans.
+
    - Use a + b (when applicable) as the basis for Step 4 question design.
 
 4. **Customer Verification Questions** — For each **P0 and P1 in-scope element** identified in Step 1 Layer A (skip P2 — P2 elements are monitoring-only, not action items this cycle), generate questions driven by BOTH the MEDDPICC gap AND the decision-maker persona.
 
-   **Persona-to-Question Mapping (MANDATORY):**
+   **Degraded mode (mirror of Step 3 `no_persona_mode` flag):** If `no_persona_mode = true` was set in Step 3 (user replied `skip`, or did not provide an EB title after the re-prompt), Step 4 enters degraded mode:
+   - Prepend the line `⚠️ No EB identified — questions are not persona-tuned.` at the top of the verification questions output.
+   - Skip the **"Persona traits applied"** block entirely.
+   - Generate questions from element gaps alone — no persona-shaped phrasing, no vocabulary references to a specific EB role, no industry-specific tone calibration based on EB seniority.
+
+   Otherwise (an EB title was provided), proceed with the full Persona-to-Question Mapping below.
+
+   **Persona-to-Question Mapping (MANDATORY when an EB title is available):**
    - Before listing questions for each element, show a brief "Persona traits applied" block citing 2–3 specific Persona traits that shaped the question design. Example:
      > "Persona traits applied:
      > (1) CTO prioritizes latency, QPS, and ROAS over generic ROI — use quantitative metrics in M-related questions.
@@ -826,7 +868,8 @@ _Expanded from Phase 2's "30-Day Improvement Targets" — same elements and thre
 | **Word (.docx)** | Offline editing | On explicit user request ("导出 Word" / "export to docx") |
 
 Visual system is fixed across all Sales Agent skills:
-- MD3 palette (primary `#6750A4`), Google Sans + Roboto, Tailwind via CDN, Material Symbols icons, max-width `6xl`, cards `28px` radius, pill badges `100px` radius, stepper with circle nodes. No deviation.
+- MD3 palette (primary `#6750A4`), Tailwind via CDN, Material Symbols icons, max-width `6xl`, cards `28px` radius, pill badges `100px` radius, stepper with circle nodes. No deviation.
+- **Typography (all output formats):** Latin characters → **Amazon Ember**; CJK characters → **思源黑体 SC** (Source Han Sans SC). In HTML/PDF: declared via `font-family` chain in the Jinja2 template, with `Noto Sans SC` from Google Fonts as the open-source CDN fallback for Source Han Sans SC. In Word (.docx): set on the Normal style via `w:rFonts` (ascii/hAnsi = Amazon Ember, eastAsia/cs = Source Han Sans SC). If either font is unavailable on the reader's machine, silent system-default fallback is acceptable — no error, no warning.
 
 **Trigger:** Two paths into Phase 7:
 

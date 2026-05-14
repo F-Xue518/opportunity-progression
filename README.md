@@ -47,8 +47,9 @@ Phase 7       Reading Report Generation   (Jinja2 MD3 template · HTML default; 
 Aligned with the Sales Agent team-wide documentation standard:
 
 - **Default output:** HTML (rendered via Jinja2 from `templates/opportunity-progression.html.j2`)
-- **On request:** PDF (headless Chrome / WeasyPrint) or Word (python-docx)
-- **Visual:** Material Design 3, Google Sans + Roboto, `#6750A4` purple primary, Tailwind via CDN
+- **On request:** PDF (headless Chromium via Playwright or system Chrome) or Word (python-docx)
+- **Visual:** Material Design 3, `#6750A4` purple primary, Tailwind via CDN
+- **Typography:** Latin → Amazon Ember; CJK → 思源黑体 SC (Source Han Sans SC, Noto Sans SC fallback)
 - **Data contract:** `examples/sample-data.json` defines every template key
 - **Preview:** open `examples/sample-report.html` in a browser
 

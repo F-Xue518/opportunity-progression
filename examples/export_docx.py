@@ -53,6 +53,35 @@ MD3 = {
 }
 
 
+def _set_normal_style_fonts(doc):
+    """Set Normal style fonts via raw w:rFonts so Latin and CJK characters
+    pick the correct typeface independently:
+        ascii / hAnsi  → Amazon Ember (Latin)
+        eastAsia / cs  → Source Han Sans SC (CJK)
+
+    Word automatically routes characters to the right slot based on Unicode
+    code point, so a single mixed-language paragraph will render Latin in
+    Ember and CJK in Source Han Sans SC without manual run splitting.
+    Missing fonts fall back to the OS default silently.
+    """
+    from docx.oxml.ns import qn
+    from docx.oxml import OxmlElement
+
+    style = doc.styles["Normal"]
+    rpr = style.element.get_or_add_rPr()
+    # remove any existing rFonts child to avoid duplicates
+    existing = rpr.find(qn("w:rFonts"))
+    if existing is not None:
+        rpr.remove(existing)
+
+    rfonts = OxmlElement("w:rFonts")
+    rfonts.set(qn("w:ascii"), "Amazon Ember")
+    rfonts.set(qn("w:hAnsi"), "Amazon Ember")
+    rfonts.set(qn("w:eastAsia"), "Source Han Sans SC")
+    rfonts.set(qn("w:cs"), "Source Han Sans SC")
+    rpr.append(rfonts)
+
+
 # --- python-docx helpers ----------------------------------------------------
 def _shade(cell, fill_hex: str):
     from docx.oxml.ns import qn
@@ -879,9 +908,10 @@ def build_document(data: dict, out_path: Path) -> Path:
         section.left_margin = Cm(1.8)
         section.right_margin = Cm(1.8)
 
-    # base font
+    # base font — Latin: Amazon Ember; CJK: Source Han Sans SC
+    # Set via w:rFonts so mixed-language runs route correctly per Unicode block.
+    _set_normal_style_fonts(doc)
     style = doc.styles["Normal"]
-    style.font.name = "Google Sans"
     style.font.size = Pt(10.5)
 
     meta = data.get("meta", {})
